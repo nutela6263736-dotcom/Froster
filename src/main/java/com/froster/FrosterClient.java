@@ -1,4 +1,3 @@
-
 package com.froster;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -16,7 +15,7 @@ public class FrosterClient implements ClientModInitializer {
     public static boolean storageEsp = false;
     public static boolean spawnerEsp = false;
 
-    private static KeyBinding openGui;
+    private KeyBinding openGui;
 
     @Override
     public void onInitializeClient() {
@@ -25,7 +24,7 @@ public class FrosterClient implements ClientModInitializer {
                 "key.froster.open_gui",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
-                "category.froster"
+                KeyBinding.Category.MISC
             )
         );
 
@@ -47,8 +46,8 @@ public class FrosterClient implements ClientModInitializer {
 
         @Override
         protected void init() {
-            int center = this.width / 2;
-            int top = this.height / 2 - 65;
+            int center = width / 2;
+            int top = height / 2 - 65;
 
             addDrawableChild(ButtonWidget.builder(
                 toggleText("Amethyst ESP", amethystEsp),
@@ -108,3 +107,6 @@ public class FrosterClient implements ClientModInitializer {
         }
     }
 }
+
+
+
