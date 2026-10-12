@@ -1,8 +1,10 @@
+
 package com.froster;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.option.KeyBinding;
@@ -85,12 +87,13 @@ public class FrosterClient implements ClientModInitializer {
 
         @Override
         public void render(
-            net.minecraft.client.gui.DrawContext context,
+            DrawContext context,
             int mouseX,
             int mouseY,
             float delta
         ) {
-            renderBackground(context, mouseX, mouseY, delta);
+            // Draw a plain background; don't trigger Minecraft's blur again.
+            context.fill(0, 0, width, height, 0xE0101420);
             context.drawCenteredTextWithShadow(
                 textRenderer,
                 "FROSTER",
@@ -107,6 +110,3 @@ public class FrosterClient implements ClientModInitializer {
         }
     }
 }
-
-
-
