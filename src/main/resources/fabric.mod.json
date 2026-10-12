@@ -1,10 +1,18 @@
-package com.froster;
-
-import net.fabricmc.api.ClientModInitializer;
-
-public class FrosterClient implements ClientModInitializer {
-    @Override
-    public void onInitializeClient() {
-        System.out.println("[Froster] Beta client initialized.");
-    }
+{
+  "schemaVersion": 1,
+  "id": "froster",
+  "version": "${version}",
+  "name": "Froster",
+  "description": "Experimental client-side Minecraft mod.",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.froster.FrosterClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "minecraft": "~1.21.11",
+    "java": ">=21"
+  }
 }
