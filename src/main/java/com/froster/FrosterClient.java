@@ -3,8 +3,10 @@ package com.froster;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -41,16 +43,38 @@ public class FrosterClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openGui.wasPressed()) {
-                if (client.player != null) {
-                    client.setScreen(new FrosterScreen());
+                if (client.currentScreen instanceof FrosterScreen froster) {
+                    froster.close();
+                } else {
+                    client.setScreen(new FrosterScreen(client.currentScreen));
                 }
             }
         });
+
+        // Add a Froster button to the vanilla title screen.
+        ScreenEvents.AFTER_INIT.register(
+            (client, screen, scaledWidth, scaledHeight) -> {
+                if (screen instanceof TitleScreen) {
+                    screen.addDrawableChild(
+                        ButtonWidget.builder(
+                            Text.literal("FROSTER"),
+                            button -> client.setScreen(
+                                new FrosterScreen(screen)
+                            )
+                        ).dimensions(
+                            8, scaledHeight - 30, 90, 20
+                        ).build()
+                    );
+                }
+            }
+        );
 
         System.out.println("[Froster] Client initialized!");
     }
 
     public static class FrosterScreen extends Screen {
+
+        private final Screen parent;
 
         private int panelX;
         private int panelY;
@@ -60,30 +84,51 @@ public class FrosterClient implements ClientModInitializer {
         private int cardH;
         private int gap;
 
-        public FrosterScreen() {
+        private int storageX;
+        private int storageY;
+        private boolean storageExpanded = false;
+
+        public FrosterScreen(Screen parent) {
             super(Text.literal("Froster"));
+            this.parent = parent;
         }
 
-        @Override
-        protected void init() {
-            clearChildren();
+        private static Text toggleText(String name, boolean enabled) {
+            return Text.literal(
+                name + "   " + (enabled ? "ON" : "OFF")
+            );
+        }
 
-            panelW = Math.min(520, width - 24);
-            panelW = Math.max(220, panelW);
-            panelH = 300;
+        private void calculateLayout() {
+            panelW = Math.max(220, Math.min(600, width - 20));
+            panelH = Math.max(190, Math.min(
+                storageExpanded ? 360 : 320,
+                height - 12
+            ));
 
             panelX = (width - panelW) / 2;
             panelY = (height - panelH) / 2;
 
             gap = 10;
-            int innerW = panelW - 32;
-            cardW = (innerW - gap) / 2;
+            cardW = (panelW - 42) / 2;
             cardH = 76;
+
+            storageX = panelX + 16 + cardW + gap;
+            storageY = panelY + 91;
+        }
+
+        @Override
+        protected void init() {
+            clearChildren();
+            calculateLayout();
 
             int leftX = panelX + 16;
             int rightX = leftX + cardW + gap;
             int firstY = panelY + 91;
+            int secondY = firstY + cardH + gap;
+            int buttonH = 25;
 
+            // Amethyst ESP.
             addDrawableChild(
                 ButtonWidget.builder(
                     toggleText("AMETHYST ESP", amethystEsp),
@@ -94,10 +139,14 @@ public class FrosterClient implements ClientModInitializer {
                         );
                     }
                 ).dimensions(
-                    leftX + 7, firstY + 36, cardW - 14, 27
+                    leftX + 7,
+                    firstY + 43,
+                    cardW - 14,
+                    buttonH
                 ).build()
             );
 
+            // Storage ESP.
             addDrawableChild(
                 ButtonWidget.builder(
                     toggleText("STORAGE ESP", storageEsp),
@@ -108,40 +157,63 @@ public class FrosterClient implements ClientModInitializer {
                         );
                     }
                 ).dimensions(
-                    rightX + 7, firstY + 36, cardW - 14, 27
+                    rightX + 7,
+                    firstY + 43,
+                    cardW - 14,
+                    buttonH
                 ).build()
             );
 
-            int secondY = firstY + cardH + gap;
+            if (storageExpanded) {
+                // Spawner ESP appears directly below Storage ESP.
+                addDrawableChild(
+                    ButtonWidget.builder(
+                        toggleText("SPAWNER ESP", spawnerEsp),
+                        button -> {
+                            spawnerEsp = !spawnerEsp;
+                            button.setMessage(
+                                toggleText("SPAWNER ESP", spawnerEsp)
+                            );
+                        }
+                    ).dimensions(
+                        rightX + 7,
+                        secondY + 43,
+                        cardW - 14,
+                        buttonH
+                    ).build()
+                );
+            } else {
+                addDrawableChild(
+                    ButtonWidget.builder(
+                        Text.literal("MORE MODULES SOON"),
+                        button -> {}
+                    ).dimensions(
+                        leftX + 7,
+                        secondY + 43,
+                        cardW - 14,
+                        buttonH
+                    ).build()
+                );
 
-            addDrawableChild(
-                ButtonWidget.builder(
-                    toggleText("SPAWNER ESP", spawnerEsp),
-                    button -> {
-                        spawnerEsp = !spawnerEsp;
-                        button.setMessage(
-                            toggleText("SPAWNER ESP", spawnerEsp)
-                        );
-                    }
-                ).dimensions(
-                    leftX + 7, secondY + 36, cardW - 14, 27
-                ).build()
-            );
-
-            addDrawableChild(
-                ButtonWidget.builder(
-                    Text.literal("CLOSE MENU"),
-                    button -> close()
-                ).dimensions(
-                    rightX + 7, secondY + 36, cardW - 14, 27
-                ).build()
-            );
+                addDrawableChild(
+                    ButtonWidget.builder(
+                        Text.literal("MODULE SLOT"),
+                        button -> {}
+                    ).dimensions(
+                        rightX + 7,
+                        secondY + 43,
+                        cardW - 14,
+                        buttonH
+                    ).build()
+                );
+            }
         }
 
-        private static Text toggleText(String name, boolean enabled) {
-            return Text.literal(
-                name + "  [" + (enabled ? "ON" : "OFF") + "]"
-            );
+        @Override
+        public void close() {
+            if (client != null) {
+                client.setScreen(parent);
+            }
         }
 
         private void drawBorder(
@@ -164,14 +236,16 @@ public class FrosterClient implements ClientModInitializer {
             int y,
             String title,
             String subtitle,
-            boolean enabled
+            boolean enabled,
+            boolean selected
         ) {
             context.fill(
                 x, y, x + cardW, y + cardH, CARD
             );
 
             drawBorder(
-                context, x, y, cardW, cardH, BORDER
+                context, x, y, cardW, cardH,
+                selected ? ICE : BORDER
             );
 
             context.fill(
@@ -181,26 +255,41 @@ public class FrosterClient implements ClientModInitializer {
             context.drawTextWithShadow(
                 textRenderer,
                 Text.literal(title),
-                x + 10,
-                y + 9,
-                WHITE
+                x + 10, y + 8, WHITE
             );
 
             context.drawTextWithShadow(
                 textRenderer,
                 Text.literal(subtitle),
-                x + 10,
-                y + 23,
-                MUTED
+                x + 10, y + 23, MUTED
             );
 
             context.fill(
-                x + cardW - 31,
-                y + 9,
-                x + cardW - 11,
-                y + 15,
+                x + cardW - 29, y + 9,
+                x + cardW - 11, y + 14,
                 enabled ? ON : OFF
             );
+        }
+
+        @Override
+        public boolean mouseClicked(
+            double mouseX,
+            double mouseY,
+            int button
+        ) {
+            // Right-click Storage ESP to show or hide Spawner ESP.
+            if (button == 1
+                && mouseX >= storageX
+                && mouseX < storageX + cardW
+                && mouseY >= storageY
+                && mouseY < storageY + cardH) {
+
+                storageExpanded = !storageExpanded;
+                init();
+                return true;
+            }
+
+            return super.mouseClicked(mouseX, mouseY, button);
         }
 
         @Override
@@ -210,8 +299,7 @@ public class FrosterClient implements ClientModInitializer {
             int mouseY,
             float delta
         ) {
-            // No renderBackground() or blur call: prevents the
-            // "Can only blur once per frame" crash.
+            // Draw our own background. Never invoke Minecraft blur.
             context.fill(
                 0, 0, width, height, 0xB900060D
             );
@@ -228,7 +316,6 @@ public class FrosterClient implements ClientModInitializer {
                 ICE
             );
 
-            // Header accent.
             context.fill(
                 panelX + 1, panelY + 1,
                 panelX + panelW - 1, panelY + 3,
@@ -238,61 +325,65 @@ public class FrosterClient implements ClientModInitializer {
             context.drawTextWithShadow(
                 textRenderer,
                 Text.literal("F R O S T E R"),
-                panelX + 16,
-                panelY + 15,
-                ICE
+                panelX + 16, panelY + 14, ICE
             );
 
             context.drawTextWithShadow(
                 textRenderer,
-                Text.literal("CLIENT SETTINGS"),
-                panelX + 16,
-                panelY + 32,
-                WHITE
+                Text.literal("CLIENT MODULES"),
+                panelX + 16, panelY + 32, WHITE
             );
 
             context.drawTextWithShadow(
                 textRenderer,
-                Text.literal("VISUALS  /  FEATURE GRID"),
-                panelX + 16,
-                panelY + 61,
-                MUTED
+                Text.literal("ICE THEME  /  RIGHT SHIFT TO CLOSE"),
+                panelX + 16, panelY + 61, MUTED
             );
 
             int leftX = panelX + 16;
-            int rightX = leftX + cardW + gap;
             int firstY = panelY + 91;
             int secondY = firstY + cardH + gap;
 
             drawCard(
                 context, leftX, firstY,
-                "AMETHYST", "Ore highlighting",
-                amethystEsp
+                "AMETHYST ESP", "Ore highlighting",
+                amethystEsp, false
             );
 
             drawCard(
-                context, rightX, firstY,
-                "STORAGE", "Container highlighting",
-                storageEsp
+                context, storageX, storageY,
+                "STORAGE ESP",
+                storageExpanded
+                    ? "Right-click to collapse"
+                    : "Right-click for Spawner ESP",
+                storageEsp, storageExpanded
             );
 
-            drawCard(
-                context, leftX, secondY,
-                "SPAWNERS", "Spawner highlighting",
-                spawnerEsp
-            );
+            if (storageExpanded) {
+                drawCard(
+                    context, storageX, secondY,
+                    "SPAWNER ESP", "Spawner highlighting",
+                    spawnerEsp, false
+                );
+            } else {
+                drawCard(
+                    context, leftX, secondY,
+                    "MODULE SLOT 04", "Future module slot",
+                    false, false
+                );
 
-            drawCard(
-                context, rightX, secondY,
-                "EXIT", "Close this menu",
-                false
-            );
+                drawCard(
+                    context, storageX, secondY,
+                    "MORE MODULES", "Ready for expansion",
+                    false, false
+                );
+            }
 
             context.drawTextWithShadow(
                 textRenderer,
-                Text.literal("RIGHT SHIFT  •  TOGGLE MENU"),
+                Text.literal("RIGHT SHIFT  •  OPEN / CLOSE"),
                 panelX + 16,
-                panelY + panelH - 19,
+                panelY + panelH - 18,
                 MUTED
             );
 
