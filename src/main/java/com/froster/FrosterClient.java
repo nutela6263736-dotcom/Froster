@@ -3,11 +3,9 @@ package com.froster;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -51,23 +49,6 @@ public class FrosterClient implements ClientModInitializer {
             }
         });
 
-        ScreenEvents.AFTER_INIT.register(
-            (client, screen, scaledWidth, scaledHeight) -> {
-                if (screen instanceof TitleScreen) {
-                    screen.addDrawableChild(
-                        ButtonWidget.builder(
-                            Text.literal("FROSTER"),
-                            button -> client.setScreen(
-                                new FrosterScreen(screen)
-                            )
-                        ).dimensions(
-                            8, scaledHeight - 30, 90, 20
-                        ).build()
-                    );
-                }
-            }
-        );
-
         System.out.println("[Froster] Client initialized!");
     }
 
@@ -85,7 +66,9 @@ public class FrosterClient implements ClientModInitializer {
         }
 
         private static Text toggleText(String name, boolean enabled) {
-            return Text.literal(name + "   " + (enabled ? "ON" : "OFF"));
+            return Text.literal(
+                name + "   " + (enabled ? "ON" : "OFF")
+            );
         }
 
         private void calculateLayout() {
@@ -120,7 +103,9 @@ public class FrosterClient implements ClientModInitializer {
                 toggleText("AMETHYST ESP", amethystEsp),
                 button -> {
                     amethystEsp = !amethystEsp;
-                    button.setMessage(toggleText("AMETHYST ESP", amethystEsp));
+                    button.setMessage(
+                        toggleText("AMETHYST ESP", amethystEsp)
+                    );
                 }
             ).dimensions(
                 leftX + 7, firstY + 43, cardW - 14, buttonH
@@ -130,7 +115,9 @@ public class FrosterClient implements ClientModInitializer {
                 toggleText("STORAGE ESP", storageEsp),
                 button -> {
                     storageEsp = !storageEsp;
-                    button.setMessage(toggleText("STORAGE ESP", storageEsp));
+                    button.setMessage(
+                        toggleText("STORAGE ESP", storageEsp)
+                    );
                 }
             ).dimensions(
                 rightX + 7, firstY + 43, cardW - 14, buttonH
@@ -141,7 +128,9 @@ public class FrosterClient implements ClientModInitializer {
                     toggleText("SPAWNER ESP", spawnerEsp),
                     button -> {
                         spawnerEsp = !spawnerEsp;
-                        button.setMessage(toggleText("SPAWNER ESP", spawnerEsp));
+                        button.setMessage(
+                            toggleText("SPAWNER ESP", spawnerEsp)
+                        );
                     }
                 ).dimensions(
                     rightX + 7, secondY + 43, cardW - 14, buttonH
@@ -190,7 +179,9 @@ public class FrosterClient implements ClientModInitializer {
                 context, x, y, cardW, cardH,
                 selected ? ICE : BORDER
             );
-            context.fill(x + 1, y + 1, x + 3, y + cardH - 1, ICE);
+            context.fill(
+                x + 1, y + 1, x + 3, y + cardH - 1, ICE
+            );
 
             context.drawTextWithShadow(
                 textRenderer, Text.literal(title),
@@ -268,6 +259,7 @@ public class FrosterClient implements ClientModInitializer {
                 "AMETHYST ESP", "Ore highlighting",
                 amethystEsp, false
             );
+
             drawCard(
                 context, storageX, storageY,
                 "STORAGE ESP",
